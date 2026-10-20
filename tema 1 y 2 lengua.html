@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Misión Lengua 6.º - Desafío Gamificado Temas 1 y 2</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --accent-purple: #6366f1;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-gold: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 15px; }
+
+    .game-container { width: 100%; max-width: 850px; background: var(--card-bg); border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); overflow: hidden; border: 2px solid var(--border-color); position: relative; }
+
+    /* HUD Header */
+    .hud { background: #090d16; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); flex-wrap: wrap; gap: 10px; }
+    .hud-stat { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 1.1rem; }
+    .badge-level { background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: white; box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4); }
+
+    /* Progress Bar */
+    .progress-bar-container { width: 100%; height: 8px; background: #1e293b; }
+    .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green)); transition: width 0.4s ease; }
+
+    /* Screens */
+    .screen { padding: 30px; display: none; }
+    .screen.active { display: block; }
+
+    /* Start Screen */
+    .hero-title { font-size: 2.3rem; margin-bottom: 10px; color: #38bdf8; text-align: center; font-weight: 800; text-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+    .hero-subtitle { text-align: center; color: var(--text-muted); margin-bottom: 30px; font-size: 1.05rem; line-height: 1.5; }
+    
+    .level-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 30px; }
+    @media (max-width: 600px) { .level-grid { grid-template-columns: 1fr; } }
+    
+    .level-card { background: #0f172a; padding: 18px; border-radius: 14px; border: 1px solid var(--border-color); text-align: left; }
+    .level-card h4 { color: var(--accent-gold); margin-bottom: 6px; font-size: 1.1rem; }
+    .level-card p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.4; }
+
+    /* Question Screen */
+    .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: 600; color: var(--text-muted); font-size: 0.95rem; }
+    .question-text { font-size: 1.25rem; font-weight: 600; line-height: 1.5; margin-bottom: 25px; color: #f1f5f9; background: #0f172a; padding: 20px; border-radius: 12px; border-left: 5px solid var(--accent-cyan); }
+
+    .options-grid { display: grid; gap: 12px; margin-bottom: 25px; }
+    .option-btn { background: #334155; border: 2px solid transparent; color: var(--text-main); padding: 16px 20px; border-radius: 12px; font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s ease; font-weight: 500; display: flex; align-items: center; justify-content: space-between; }
+    .option-btn:hover:not(:disabled) { background: #475569; border-color: var(--accent-cyan); transform: translateY(-2px); }
+    .option-btn.correct { background: #064e3b; border-color: var(--accent-green); color: #6ee7b7; font-weight: 700; }
+    .option-btn.incorrect { background: #7f1d1d; border-color: var(--accent-red); color: #fca5a5; opacity: 0.8; }
+
+    /* Feedback Box */
+    .feedback-box { background: #0f172a; border-radius: 14px; padding: 20px; margin-bottom: 25px; display: none; border-left: 5px solid var(--accent-purple); animation: fadeIn 0.3s ease; }
+    .feedback-box.correct { border-left-color: var(--accent-green); background: #022c22; }
+    .feedback-box.incorrect { border-left-color: var(--accent-red); background: #2a0a0a; }
+    .feedback-title { font-weight: bold; font-size: 1.15rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .feedback-text { color: #cbd5e1; font-size: 0.98rem; line-height: 1.6; }
+
+    /* Buttons */
+    .btn { background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); color: white; border: none; padding: 16px 30px; border-radius: 12px; font-weight: bold; font-size: 1.05rem; cursor: pointer; width: 100%; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5); }
+
+    /* End Screen */
+    .results-card { text-align: center; padding: 20px 10px; }
+    .score-display { font-size: 3.5rem; font-weight: 800; color: var(--accent-gold); margin: 20px 0 10px; text-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+    .achievement-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 15px; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+<div class="game-container">
+  <!-- HUD Header -->
+  <div class="hud">
+    <div class="hud-stat">❤️ <span id="lives-display">3</span></div>
+    <div class="hud-stat"><span class="badge-level" id="level-badge">Nivel 1</span></div>
+    <div class="hud-stat">🔥 Racha: <span id="streak-display">0</span></div>
+    <div class="hud-stat">🏆 <span id="score-display">0</span> pts</div>
+  </div>
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+
+  <!-- Pantalla de Inicio -->
+  <div class="screen active" id="start-screen">
+    <h1 class="hero-title">🎮 Misión Lengua 6.º</h1>
+    <p class="hero-subtitle">Repaso Interactivo Gamificado — Temas 1 y 2<br>Demuestra tu conocimiento completando los 4 niveles de dificultad (40 retos pedagógicos).</p>
+
+    <div class="level-grid">
+      <div class="level-card">
+        <h4>Nivel 1: Explorador (10 retos)</h4>
+        <p>Conceptos clave, definiciones básicas de gramática, vocabulario y ortografía general.</p>
+      </div>
+      <div class="level-card">
+        <h4>Nivel 2: Detective (10 retos)</h4>
+        <p>Aplicación práctica en oraciones, distinción de diptongos/hiatos y demostrativos/posesivos.</p>
+      </div>
+      <div class="level-card">
+        <h4>Nivel 3: Maestro (10 retos)</h4>
+        <p>Desarrollo de conceptos, justificación de reglas ortográficas y transformaciones de sintagmas.</p>
+      </div>
+      <div class="level-card">
+        <h4>Nivel 4: Gran Analista (10 retos)</h4>
+        <p>Análisis morfológico completo y análisis sintáctico avanzado del sintagma nominal.</p>
+      </div>
+    </div>
+
+    <button class="btn" onclick="startGame()">¡Iniciar Misión de Repaso!</button>
+  </div>
+
+  <!-- Pantalla de Preguntas -->
+  <div class="screen" id="quiz-screen">
+    <div class="question-header">
+      <span id="question-tracker">Pregunta 1 de 40</span>
+      <span style="color: var(--accent-gold);" id="points-value">+100 pts</span>
+    </div>
+
+    <div class="question-text" id="question-text">Cargando pregunta...</div>
+
+    <div class="options-grid" id="options-container"></div>
+
+    <div class="feedback-box" id="feedback-box">
+      <div class="feedback-title" id="feedback-title"></div>
+      <div class="feedback-text" id="feedback-text"></div>
+    </div>
+
+    <button class="btn" id="next-btn" style="display: none;" onclick="nextQuestion()">Siguiente Reto ➔</button>
+  </div>
+
+  <!-- Pantalla Final -->
+  <div class="screen" id="end-screen">
+    <div class="results-card">
+      <h2 id="end-title" class="hero-title">¡Misión Completada!</h2>
+      <p style="color: var(--text-muted); margin-top: 5px;">Resumen final de tu desempeño en los Temas 1 y 2</p>
+      
+      <div class="score-display" id="final-score">0 pts</div>
+      <div class="achievement-title" id="achievement-badge"></div>
+      <p id="achievement-desc" style="color: var(--text-muted); max-width: 600px; margin: 0 auto 30px; line-height: 1.6;"></p>
+
+      <button class="btn" onclick="resetGame()">Intentar de Nuevo para Mejorar Puntuación</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Banco completo de 40 ejercicios (10 por nivel)
+  const questions = [
+    // NIVEL 1: EXPLORADOR DE CONCEPTOS (1-10)
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "1. ¿Qué es una palabra COMPUESTA?",
+      options: [
+        "Una palabra formada por la unión de dos o más palabras simples.",
+        "Una palabra que lleva un sufijo al final.",
+        "Una palabra invariable que no cambia de género ni número.",
+        "Una palabra primitiva que no procede de ninguna otra."
+      ],
+      correct: 0,
+      explanation: "<b>Explicación razonada:</b> Las palabras compuestas se forman uniendo dos o más palabras simples (por ejemplo: <i>para</i> + <i>brisas</i> = <i>parabrisas</i>). Las palabras con sufijos o prefijos son derivadas."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "2. ¿Qué regla siguen las palabras ESDRÚJULAS respecto a la tilde?",
+      options: [
+        "Llevan tilde solo si terminan en vocal.",
+        "Llevan tilde solo si terminan en consonante distinta de N o S.",
+        "Llevan tilde siempre, sin excepción.",
+        "Nunca llevan tilde."
+      ],
+      correct: 2,
+      explanation: "<b>Explicación razonada:</b> Las palabras esdrújulas tienen la sílaba tónica en la antepenúltima posición y llevan tilde siempre (ejemplos: <i>teléfono</i>, <i>pájaro</i>, <i>música</i>)."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "3. ¿Qué es un DIPTONGO?",
+      options: [
+        "La separación de dos vocales en sílabas distintas.",
+        "La unión de dos vocales en una misma sílaba.",
+        "La combinación de tres vocales tónicas seguidas.",
+        "Una palabra que siempre lleva tilde en la primera vocal."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Un diptongo es la articulación de dos vocales en una sola sílaba (vocal abierta + cerrada átona, o dos cerradas distintas)."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "4. ¿Cuáles son las partes principales que componen un SINTAGMA NOMINAL (SN)?",
+      options: [
+        "Verbo principal y adverbios.",
+        "Determinante, Núcleo (sustantivo o pronombre) y Complementos (adjetivos).",
+        "Preposición y conjunción únicamente.",
+        "Sujeto y predicado verbal."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> El Sintagma Nominal tiene como núcleo a un sustantivo o pronombre, que puede ir acompañado por determinantes delante y complementos (adjetivos) detrás."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "5. Los demostrativos sirven para...",
+      options: [
+        "Indicar la distancia espacial o temporal respecto al hablante.",
+        "Expresar a quién pertenece un objeto.",
+        "Señalar una cantidad exacta de objetos.",
+        "Sustituir siempre al verbo de la oración."
+      ],
+      correct: 0,
+      explanation: "<b>Explicación razonada:</b> Los demostrativos indican la cercanía (<i>este</i>), distancia media (<i>ese</i>) o lejanía (<i>aquel</i>) de los seres u objetos respecto al hablante."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "6. ¿Qué expresan los POSESIVOS?",
+      options: [
+        "La distancia física respecto al oyente.",
+        "Que un ser u objeto pertenece a uno o varios poseedores.",
+        "Una orden o instrucción directa.",
+        "La posición de la sílaba tónica."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Los posesivos indican la pertenencia de un ser u objeto a uno o varios poseedores (ejemplos: <i>mi</i>, <i>nuestro</i>, <i>vuestra</i>)."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "7. ¿Qué es un HIATO?",
+      options: [
+        "La unión de dos vocales en la misma sílaba.",
+        "La presencia de dos vocales seguidas que pertenecen a sílabas DIFERENTES.",
+        "La unión de tres vocales tónicas seguidas.",
+        "Una palabra que nunca lleva tilde."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> El hiato se produce cuando dos vocales contiguas se pronuncian en sílabas distintas (ejemplos: <i>pa-ís</i>, <i>te-a-tro</i>)."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "8. Una palabra AGUDA lleva tilde cuando...",
+      options: [
+        "Termina en vocal, -n o -s.",
+        "Termina en consonante distinta de -n o -s.",
+        "Su sílaba tónica es la penúltima.",
+        "Termina siempre en consonante."
+      ],
+      correct: 0,
+      explanation: "<b>Explicación razonada:</b> Las palabras agudas tienen su sílaba tónica en el último lugar y llevan tilde si terminan en vocal, -n o -s (ejemplos: <i>café</i>, <i>balcón</i>, <i>compás</i>)."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "9. Las palabras DERIVADAS se forman a partir de...",
+      options: [
+        "Unir dos palabras simples independientes.",
+        "Añadir morfemas derivativos (prefijos o sufijos) a una palabra primitiva.",
+        "Cambiar una palabra de singular a plural.",
+        "Eliminar vocales de la raíz."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Las palabras derivadas se crean agregando prefijos (delante) o sufijos (detrás) a la raíz o palabra primitiva (ejemplo: <i>jardín</i> ➔ <i>jardinero</i>)."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "10. En el sintagma nominal 'nuestros amigos', ¿qué función desempeña 'nuestros'?",
+      options: [
+        "Núcleo.",
+        "Complemento.",
+        "Determinante.",
+        "Preposición."
+      ],
+      correct: 2,
+      explanation: "<b>Explicación razonada:</b> Los posesivos que van delante del sustantivo funcionan como <b>determinantes</b> concretando al núcleo (<i>amigos</i>)."
+    },
+
+    // NIVEL 2: DETECTIVE DE LENGUA (11-20)
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "11. Clasifica la palabra 'guardabarros':",
+      options: [
+        "Palabra primitiva.",
+        "Palabra derivada con prefijo.",
+        "Palabra compuesta (guarda + barros).",
+        "Palabra invariable."
+      ],
+      correct: 2,
+      explanation: "<b>Explicación razonada:</b> <i>Guardabarros</i> nace de unir el verbo <i>guarda</i> y el sustantivo <i>barros</i>, por lo que es una palabra compuesta."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "12. ¿Por qué la palabra 'examen' NO lleva tilde, pero su plural 'exámenes' SÍ la lleva?",
+      options: [
+        "Porque 'examen' es aguda y 'exámenes' es llana.",
+        "Because 'examen' es llana terminada en -n (sin tilde) y 'exámenes' es esdrújula (lleva tilde siempre).",
+        "Porque 'examen' contiene un hiato y 'exámenes' un diptongo.",
+        "Ninguna de las dos debería llevar tilde."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Ex-a-men</i> es llana acabada en -n (no lleva tilde). Al hacer el plural, <i>ex-á-me-nes</i> pasa a ser esdrújula, por lo que exige tilde obligatoriamente."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "13. Identifica la palabra que contiene un HIATO con tilde especial por regla de vocal cerrada tónica:",
+      options: [
+        "Ciénaga.",
+        "Camión.",
+        "Baúl.",
+        "Cuesta."
+      ],
+      correct: 2,
+      explanation: "<b>Explicación razonada:</b> En <i>ba-úl</i>, la vocal cerrada <i>u</i> es tónica y está junto a la vocal abierta <i>a</i>. Lleva tilde siempre para marcar el hiato."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "14. En 'Aquellos árboles frondosos dan mucha sombra', ¿cuál es el NÚCLEO del Sintagma Nominal sujeto?",
+      options: [
+        "Aquellos.",
+        "Árboles.",
+        "Frondosos.",
+        "Sombra."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> El sujeto es 'Aquellos árboles frondosos'. El sustantivo principal que actúa como núcleo es <i>árboles</i>."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "15. ¿Qué distancia expresa el demostrativo en 'Esa libreta azul es de María'?",
+      options: [
+        "Cercanía al hablante.",
+        "Distancia media respecto al hablante.",
+        "Lejanía extrema respecto a ambos.",
+        "Tiempo pasado."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Ese/esa/esos/esas</i> son demostrativos que indican <b>distancia media</b> (cerca del oyente o a media distancia)."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "16. ¿Qué palabra contiene un DIPTONGO?",
+      options: [
+        "Poeta.",
+        "Viento.",
+        "Tranvía.",
+        "Marea."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> En <i>vien-to</i>, la vocal cerrada <i>i</i> y la abierta <i>e</i> se unen en la misma sílaba formando un diptongo. En las demás hay hiatos."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "17. ¿Cuál de las siguientes palabras contiene un PREFIJO?",
+      options: [
+        "Zapatero.",
+        "Subterráneo.",
+        "Papelera.",
+        "Calor."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Subterráneo</i> contiene el prefijo <i>sub-</i> (debajo de) añadido a la raíz <i>tierra</i>."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "18. En la frase 'La chica esa no ha llegado', ¿qué función cumple 'esa'?",
+      options: [
+        "Determinante.",
+        "Núcleo del sintagma nominal.",
+        "Complemento del sustantivo (va detrás de 'chica').",
+        "Verbo principal."
+      ],
+      correct: 2,
+      explanation: "<b>Explicación razonada:</b> Cuando el demostrativo va situado detrás del sustantivo al que acompaña (<i>la chica esa</i>), funciona como <b>complemento</b>."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "19. Análisis morfológico de 'vuestra' en 'vuestra casa':",
+      options: [
+        "Posesivo, un solo poseedor, 1.ª persona, femenino singular.",
+        "Posesivo, varios poseedores, 2.ª persona, femenino singular.",
+        "Demostrativo, distancia media, femenino plural.",
+        "Posesivo, un solo poseedor, 3.ª persona, masculino singular."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Vuestra</i> expresa que la casa pertenece a vosotros/as (varios poseedores, 2.ª persona) y concuerda en femenino singular con <i>casa</i>."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "20. Marca la palabra LLANA que debe llevar tilde:",
+      options: [
+        "Lapiz.",
+        "Coche.",
+        "Mesa.",
+        "Cantar."
+      ],
+      correct: 0,
+      explanation: "<b>Explicación razonada:</b> <i>Lá-piz</i> es una palabra llana que termina en consonante <i>-z</i> (distinta de -n o -s), por lo que debe llevar tilde obligatoriamente."
+    },
+
+    // NIVEL 3: MAESTRO DEL LENGUAJE (21-30)
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "21. ¿Por qué la palabra 'vehículo' lleva tilde si tiene una 'h' intercalada?",
+      options: [
+        "Porque la 'h' actúa como consonante fuerte.",
+        "Porque contiene un hiato de vocal abierta ('e') y cerrada tónica ('í'), y la 'h' intercalada no impide el hiato ni la tilde.",
+        "Porque todas las palabras con 'h' llevan tilde.",
+        "Porque es una palabra aguda terminada en vocal."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> La 'h' intercalada no altera el hiato entre la <i>e</i> y la <i>í</i> tónica (ve-hí-cu-lo). Al ser una sílaba tónica con vocal cerrada en hiato y además palabra esdrújula, lleva tilde."
+    },
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "22. Explica el proceso de formación de la palabra 'reconstrucción':",
+      options: [
+        "Composición uniendo recon + strucción.",
+        "Derivación con el prefijo re- (repetir) y el sufijo -ción (acción) sobre la raíz de construir.",
+        "Palabra primitiva sin morfemas.",
+        "Abreviatura de dos palabras."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> A la raíz de <i>construir</i> se le añade el prefijo <i>re-</i> (hacer de nuevo) y el sufijo derivativo <i>-ción</i> que forma sustantivos de acción."
+    },
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "23. ¿Qué diferencia funcional existe entre 'mi libro' y 'el libro mío'?",
+      options: [
+        "En 'mi libro', mi es núcleo; en 'el libro mío', mío es determinante.",
+        "En 'mi libro', mi va delante y es determinante; en 'el libro mío', mío va detrás y funciona como complemento.",
+        "Ambos posesivos funcionan como núcleo.",
+        "No hay ninguna diferencia gramatical."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Los posesivos antepuestos al sustantivo son determinantes (<i>mi libro</i>). Si van pospuestos (<i>el libro mío</i>), funcionan como complementos del sustantivo."
+    },
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "24. Analiza la acentuación de la palabra 'bonsái':",
+      options: [
+        "Es una palabra llana terminada en vocal.",
+        "Es una palabra aguda terminada en diptongo (-ai) con tilde en la vocal abierta 'a'.",
+        "Es una palabra esdrújula con hiato.",
+        "No lleva tilde según las normas generales."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Bon-sái</i> es una palabra aguda acabada en vocal (con diptongo). Las palabras agudas con diptongo llevan tilde sobre la vocal abierta si terminan en vocal, -n o -s."
+    },
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "25. Transforma 'una mochila nueva' cambiando el adjetivo pero manteniendo la misma estructura sintáctica:",
+      options: [
+        "Las mochilas.",
+        "Una mochila roja.",
+        "Aquella mochila.",
+        "Mochila."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Mantiene la estructura: Determinante artículo indeterminado (<i>una</i>) + Núcleo sustantivo (<i>mochila</i>) + Complemento adjetivo (<i>roja</i>)."
+    },
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "26. ¿Por qué lleva tilde la palabra 'raíz' pero NO la palabra 'raizamen'?",
+      options: [
+        "Porque 'raíz' es un hiato de vocal cerrada tónica (ra-íz), mientras que 'raizamen' es llana terminada en -n y forma diptongo átono.",
+        "Porque las palabras cortas siempre llevan tilde.",
+        "Porque 'raizamen' es una palabra compuesta.",
+        "Ambas deberían llevar tilde."
+      ],
+      correct: 0,
+      explanation: "<b>Explicación razonada:</b> En <i>ra-íz</i>, la <i>í</i> es tónica y forma hiato (exige tilde). En <i>rai-za-men</i>, la pronunciación desplaza el acento a la sílaba <i>za</i> (llana acabada en -n, no lleva tilde)."
+    },
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "27. Identifica la oración que contiene un demostrativo funcionando como NÚCLEO del sintagma nominal:",
+      options: [
+        "Aquella niña corre mucho.",
+        "Esto no me parece nada fácil.",
+        "Me gusta este libro.",
+        "El chico ese es muy simpático."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> En 'Esto no me parece fácil', el demostrativo neutro <i>Esto</i> no acompaña a ningún sustantivo, sino que funciona directamente como núcleo del sujeto."
+    },
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "28. En la palabra 'antigripal', ¿qué significado aporta el prefijo 'anti-'?",
+      options: [
+        "Debajo de.",
+        "Oposición o prevención contra algo (la gripe).",
+        "Exceso de cantidad.",
+        "Repetición de una acción."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> El prefijo <i>anti-</i> indica oposición, prevención o lucha contra (ejemplos: <i>antigripal</i>, <i>antirrobo</i>, <i>antivirus</i>)."
+    },
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "29. ¿Cuál es la estructura sintáctica de 'Nuestros dos antiguos compañeros'?",
+      options: [
+        "Núcleo + Determinante + Complemento + Complemento.",
+        "Determinante (posesivo) + Determinante (numeral) + Complemento (adjetivo) + Núcleo (sustantivo).",
+        "Determinante + Núcleo + Verbo.",
+        "Preposición + Sustantivo + Adjetivo."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Nuestros</i> (Det. posesivo) + <i>dos</i> (Det. numeral) + <i>antiguos</i> (Compl. adjetivo) + <i>compañeros</i> (Núcleo sustantivo)."
+    },
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "30. Justifica por qué la palabra 'música' lleva tilde:",
+      options: [
+        "Porque es aguda terminada en vocal.",
+        "Porque es esdrújula (mú-si-ca) y todas las palabras esdrújulas llevan tilde.",
+        "Porque tiene un hiato en la primera sílaba.",
+        "Porque es una palabra compuesta."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> La sílaba tónica es <i>mú</i> (antepenúltima posición). Al ser esdrújula, lleva tilde siempre."
+    },
+
+    // NIVEL 4: GRAN ANALISTA MORFOSINTÁCTICO (31-40)
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "31. Análisis morfológico completo de 'aquellas' en: 'Guarda aquellas fotos viejas':",
+      options: [
+        "Sustantivo común, femenino, plural.",
+        "Determinante demostrativo, indica lejanía, femenino, plural.",
+        "Pronombre posesivo, varios poseedores, femenino plural.",
+        "Adjetivo calificativo en grado comparativo."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Acompaña al sustantivo <i>fotos</i>, por lo que es un determinante demostrativo que expresa lejanía, en género femenino y número plural."
+    },
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "32. Análisis sintáctico del Sintagma Nominal 'Las tres pequeñas mariposas':",
+      options: [
+        "Las (Núcleo), tres (Compl), pequeñas (Det), mariposas (Compl).",
+        "Las (Det. artículo), tres (Det. numeral), pequeñas (Compl. adjetivo), mariposas (Núcleo sustantivo).",
+        "Las tres (Núcleo), pequeñas mariposas (Sujeto).",
+        "Las (Compl), tres (Núcleo), pequeñas (Det), mariposas (Núcleo)."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Las</i> es determinante artículo, <i>tres</i> es determinante numeral, <i>pequeñas</i> es adjetivo en función de complemento, y <i>mariposas</i> es el sustantivo núcleo del SN."
+    },
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "33. Análisis morfológico completo de 'mías' en: 'Esas zapatillas rojas son mías':",
+      options: [
+        "Determinante demostrativo, cercanía, femenino plural.",
+        "Pronombre posesivo, un solo poseedor, 1.ª persona, femenino, plural.",
+        "Sustantivo propio, femenino plural.",
+        "Adjetivo determinativo en grado superlativo."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> No acompaña directamente a un sustantivo, indica un solo poseedor (mí/yo), 1.ª persona, femenino y número plural."
+    },
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "34. Identifica los sintagmas nominales y sus núcleos en: 'Mis nuevos vecinos tienen un perro precioso':",
+      options: [
+        "SN 1: 'Mis nuevos vecinos' (Núcleo: vecinos) | SN 2: 'un perro precioso' (Núcleo: perro).",
+        "SN 1: 'Mis nuevos' (Núcleo: nuevos) | SN 2: 'tienen' (Núcleo: tienen).",
+        "SN 1: 'vecinos tienen' (Núcleo: tienen) | SN 2: 'precioso' (Núcleo: precioso).",
+        "Solo hay un sintagma nominal en toda la oración."
+      ],
+      correct: 0,
+      explanation: "<b>Explicación razonada:</b> El primer SN es el sujeto 'Mis nuevos vecinos' (núcleo <i>vecinos</i>). El segundo SN es el complemento directo 'un perro precioso' (núcleo <i>perro</i>)."
+    },
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "35. Realiza el análisis sintáctico de 'Ese amigo vuestro':",
+      options: [
+        "Ese (Núcleo) + amigo (Det) + vuestro (Compl).",
+        "Ese (Det. demostrativo) + amigo (Núcleo sustantivo) + vuestro (Compl. posesivo pospuesto).",
+        "Ese amigo (Sujeto) + vuestro (Predicado).",
+        "Tres determinantes juntos sin núcleo."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Ese</i> es determinante demostrativo (delante), <i>amigo</i> es el núcleo sustantivo, y <i>vuestro</i> al ir detrás funciona como complemento del núcleo."
+    },
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "36. Analiza morfológicamente 'esto' en la oración 'Esto me parece increíble':",
+      options: [
+        "Determinante demostrativo masculino singular.",
+        "Demostrativo neutro (funciona como pronombre/núcleo), indica cercanía.",
+        "Pronombre posesivo femenino plural.",
+        "Adverbio de lugar."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Los demostrativos neutros (<i>esto, eso, aquello</i>) nunca acompañan a un sustantivo y no tienen variación de género ni número; funcionan siempre como pronombres (núcleo)."
+    },
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "37. En 'Aquella extraña luz iluminó el oscuro bosque', analiza el SN sujeto 'Aquella extraña luz':",
+      options: [
+        "Aquella (Compl) + extraña (Det) + luz (Núcleo).",
+        "Aquella (Det. demostrativo, lejanía) + extraña (Compl. adjetivo) + luz (Núcleo sustantivo).",
+        "Aquella extraña (Núcleo) + luz (Compl).",
+        "Sintagma verbal con verbo auxiliar."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Aquella</i> es determinante demostrativo de lejanía, <i>extraña</i> es adjetivo modificador/complemento antepuesto, y <i>luz</i> es el sustantivo núcleo."
+    },
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "38. Analiza la palabra 'nuestra' en: 'Aquella idea nuestra funcionó':",
+      options: [
+        "Determinante demostrativo de distancia media.",
+        "Posesivo (varios poseedores, 1.ª persona, femenino singular) funcionando como complemento por ir pospuesto.",
+        "Pronombre personal tónico de 3.ª persona.",
+        "Sustantivo abstracto."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Pertenece a varios poseedores (nosotros/as), 1.ª persona, femenino singular. Al ir detrás del sustantivo <i>idea</i>, su función sintáctica es de complemento."
+    },
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "39. Análisis morfológico correcto de 'tus' en 'tus guantes nuevos':",
+      options: [
+        "Pronombre personal de 2.ª persona del plural.",
+        "Determinante posesivo, un solo poseedor, 2.ª persona, masculino/femenino plural (forma apocopada).",
+        "Demostrativo de cercanía en masculino plural.",
+        "Adjetivo calificativo positivo."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Tus</i> es un determinante posesivo que indica un solo poseedor (tú), 2.ª persona, en plural, concordando con <i>guantes</i>."
+    },
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "40. Analiza morfosintácticamente la palabra 'aquel' en 'Aquel anciano baúl':",
+      options: [
+        "Aquel: Núcleo del sintagma nominal.",
+        "Aquel: Determinante demostrativo de lejanía, masculino singular, que concreta al núcleo 'baúl'.",
+        "Aquel: Adjetivo calificativo complemento.",
+        "Aquel: Preposición de lugar."
+      ],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Aquel</i> se antepone al sustantivo núcleo <i>baúl</i> (intercalando el adjetivo <i>anciano</i>), funcionando como determinante demostrativo que expresa lejanía."
+    }
+  ];
+
+  // Estado del Juego
+  let currentQuestionIndex = 0;
+  let score = 0;
+  let lives = 3;
+  let streak = 0;
+  let isAnswered = false;
+
+  // Elementos DOM
+  const startScreen = document.getElementById('start-screen');
+  const quizScreen = document.getElementById('quiz-screen');
+  const endScreen = document.getElementById('end-screen');
+  const livesDisplay = document.getElementById('lives-display');
+  const scoreDisplay = document.getElementById('score-display');
+  const streakDisplay = document.getElementById('streak-display');
+  const levelBadge = document.getElementById('level-badge');
+  const progressBar = document.getElementById('progress-bar');
+  const questionText = document.getElementById('question-text');
+  const optionsContainer = document.getElementById('options-container');
+  const feedbackBox = document.getElementById('feedback-box');
+  const feedbackTitle = document.getElementById('feedback-title');
+  const feedbackText = document.getElementById('feedback-text');
+  const nextBtn = document.getElementById('next-btn');
+
+  function startGame() {
+    startScreen.classList.remove('active');
+    quizScreen.classList.add('active');
+    currentQuestionIndex = 0;
+    score = 0;
+    lives = 3;
+    streak = 0;
+    updateHUD();
+    showQuestion();
+  }
+
+  function updateHUD() {
+    livesDisplay.textContent = lives;
+    scoreDisplay.textContent = score;
+    streakDisplay.textContent = streak;
+    const progress = (currentQuestionIndex / questions.length) * 100;
+    progressBar.style.width = `${progress}%`;
+  }
+
+  function showQuestion() {
+    isAnswered = false;
+    const q = questions[currentQuestionIndex];
+
+    document.getElementById('question-tracker').textContent = `Pregunta ${currentQuestionIndex + 1} de ${questions.length}`;
+    document.getElementById('points-value').textContent = `+${q.points} pts`;
+    levelBadge.textContent = q.levelName;
+    questionText.textContent = q.question;
+
+    optionsContainer.innerHTML = '';
+    feedbackBox.style.display = 'none';
+    nextBtn.style.display = 'none';
+
+    q.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = `<span>${opt}</span>`;
+      btn.onclick = () => selectOption(idx);
+      optionsContainer.appendChild(btn);
+    });
+  }
+
+  function selectOption(selectedIndex) {
+    if (isAnswered) return;
+    isAnswered = true;
+
+    const q = questions[currentQuestionIndex];
+    const buttons = optionsContainer.children;
+
+    if (selectedIndex === q.correct) {
+      buttons[selectedIndex].classList.add('correct');
+      streak++;
+      const streakBonus = streak > 1 ? (streak - 1) * 50 : 0;
+      const earned = q.points + streakBonus;
+      score += earned;
+
+      let bonusMsg = streakBonus > 0 ? ` (¡+${streakBonus} pts por racha de ${streak}!)` : '';
+      showFeedback(true, `¡Excelente! 🎉${bonusMsg}`, q.explanation);
+    } else {
+      buttons[selectedIndex].classList.add('incorrect');
+      buttons[q.correct].classList.add('correct');
+      streak = 0;
+      lives--;
+      showFeedback(false, "¡Ocasión de aprendizaje! ❌", q.explanation);
+    }
+
+    Array.from(buttons).forEach(btn => btn.disabled = true);
+    updateHUD();
+
+    if (lives <= 0) {
+      setTimeout(endGame, 3000);
+    } else {
+      nextBtn.style.display = 'block';
+    }
+  }
+
+  function showFeedback(isCorrect, title, text) {
+    feedbackBox.className = `feedback-box ${isCorrect ? 'correct' : 'incorrect'}`;
+    feedbackTitle.innerHTML = title;
+    feedbackText.innerHTML = text;
+    feedbackBox.style.display = 'block';
+  }
+
+  function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < questions.length) {
+      showQuestion();
+    } else {
+      endGame();
+    }
+  }
+
+  function endGame() {
+    quizScreen.classList.remove('active');
+    endScreen.classList.add('active');
+
+    document.getElementById('final-score').textContent = `${score} pts`;
+    const achievementBadge = document.getElementById('achievement-badge');
+    const achievementDesc = document.getElementById('achievement-desc');
+
+    if (lives <= 0) {
+      document.getElementById('end-title').textContent = "¡Misión Interrumpida!";
+      achievementBadge.textContent = "💔 Te has quedado sin vidas";
+      achievementBadge.style.color = "var(--accent-red)";
+      achievementDesc.textContent = `Has completado ${currentQuestionIndex} de 40 preguntas. Revisa las explicaciones teóricas y vuelve a intentarlo para dominar los Temas 1 y 2.`;
+    } else if (score >= 8000) {
+      document.getElementById('end-title').textContent = "🏆 ¡Gran Maestro Morfosintáctico!";
+      achievementBadge.textContent = "🥇 Máximo Nivel de Logro Alcanzado";
+      achievementBadge.style.color = "var(--accent-gold)";
+      achievementDesc.textContent = "¡Enhorabuena! Has resuelto correctamente los 40 retos de los Temas 1 y 2 con un dominio excelente del Sintagma Nominal, ortografía y vocabulario.";
+    } else if (score >= 4000) {
+      document.getElementById('end-title').textContent = "⭐ ¡Maestro del Lenguaje!";
+      achievementBadge.textContent = "🥈 Nivel de Logro Avanzado";
+      achievementBadge.style.color = "var(--accent-cyan)";
+      achievementDesc.textContent = "¡Muy buen trabajo! Has superado con éxito la mayoría de los retos. Repasa el nivel de análisis morfosintáctico para alcanzar la puntuación máxima.";
+    } else {
+      document.getElementById('end-title').textContent = "📜 ¡Detective de Lengua!";
+      achievementBadge.textContent = "🥉 Nivel de Logro Elemental";
+      achievementBadge.style.color = "var(--accent-purple)";
+      achievementDesc.textContent = "Has completado la misión. Sigue practicando los conceptos de acentuación de hiatos/diptongos y demostrativos para subir de nivel.";
+    }
+  }
+
+  function resetGame() {
+    endScreen.classList.remove('active');
+    startScreen.classList.add('active');
+  }
+</script>
+</body>
+</html>
