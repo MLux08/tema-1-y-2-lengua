@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Misión Lengua 6º - Desafío Temas 1 y 2</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #3730a3;
+      --secondary: #06b6d4;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+
+    .game-container { width: 100%; max-width: 800px; background: var(--card-bg); border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); overflow: hidden; border: 2px solid #334155; }
+    
+    /* HUD Header */
+    .hud { background: #0f172a; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; }
+    .hud-stat { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 1.1rem; }
+    .badge { background: var(--primary); padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; text-transform: uppercase; }
+
+    /* Progress Bar */
+    .progress-bar-container { width: 100%; height: 8px; background: #334155; }
+    .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--secondary), var(--success)); transition: width 0.4s ease; }
+
+    /* Screen Styles */
+    .screen { padding: 30px; display: none; }
+    .screen.active { display: block; }
+
+    /* Start Screen */
+    .title { font-size: 2.2rem; margin-bottom: 15px; color: #38bdf8; text-align: center; }
+    .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 25px; font-size: 1.05rem; }
+    .level-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .level-info { background: #0f172a; padding: 15px; border-radius: 12px; border: 1px solid #334155; text-align: center; }
+    .level-info h4 { color: var(--warning); margin-bottom: 5px; }
+
+    /* Question Screen */
+    .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .question-text { font-size: 1.3rem; font-weight: 600; line-height: 1.5; margin-bottom: 25px; color: #f1f5f9; }
+    
+    .options-grid { display: grid; gap: 12px; margin-bottom: 25px; }
+    .option-btn { background: #334155; border: 2px solid transparent; color: var(--text); padding: 16px 20px; border-radius: 12px; font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s; font-weight: 500; }
+    .option-btn:hover:not(:disabled) { background: #475569; border-color: var(--secondary); transform: translateY(-2px); }
+    .option-btn.correct { background: #064e3b; border-color: var(--success); color: #6ee7b7; }
+    .option-btn.incorrect { background: #7f1d1d; border-color: var(--danger); color: #fca5a5; }
+
+    /* Feedback Box */
+    .feedback-box { background: #0f172a; border-radius: 12px; padding: 20px; border-left: 5px solid var(--primary); margin-bottom: 20px; display: none; }
+    .feedback-box.correct { border-left-color: var(--success); }
+    .feedback-box.incorrect { border-left-color: var(--danger); }
+    .feedback-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 8px; }
+    .feedback-text { color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; }
+
+    /* Controls */
+    .btn { background: var(--primary); color: white; border: none; padding: 14px 28px; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%; transition: background 0.2s; }
+    .btn:hover { background: var(--primary-dark); }
+
+    /* End Screen */
+    .results-card { text-align: center; padding: 20px; }
+    .score-display { font-size: 3rem; font-weight: bold; color: var(--warning); margin: 15px 0; }
+  </style>
+</head>
+<body>
+
+<div class="game-container">
+  <!-- HUD Header -->
+  <div class="hud">
+    <div class="hud-stat">❤️ <span id="lives-display">3</span></div>
+    <div class="hud-stat"><span class="badge" id="level-badge">Nivel 1</span></div>
+    <div class="hud-stat">🏆 <span id="score-display">0</span> pts</div>
+  </div>
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+
+  <!-- Pantalla de Inicio -->
+  <div class="screen active" id="start-screen">
+    <h1 class="title">🎮 Misión Lengua 6º</h1>
+    <p class="subtitle">Demuestra tus conocimientos de los Temas 1 y 2 en este desafío de 4 niveles.</p>
+
+    <div class="level-card-grid">
+      <div class="level-info">
+        <h4>Nivel 1</h4>
+        <p>Explorador de Conceptos</p>
+      </div>
+      <div class="level-info">
+        <h4>Nivel 2</h4>
+        <p>Detective de Lengua</p>
+      </div>
+      <div class="level-info">
+        <h4>Nivel 3</h4>
+        <p>Maestro del Lenguaje</p>
+      </div>
+      <div class="level-info">
+        <h4>Nivel 4</h4>
+        <p>Gran Analista</p>
+      </div>
+    </div>
+
+    <button class="btn" onclick="startGame()">¡Comenzar la Aventura!</button>
+  </div>
+
+  <!-- Pantalla de Pregunta -->
+  <div class="screen" id="quiz-screen">
+    <div class="question-header">
+      <span style="color: var(--text-muted); font-size: 0.9rem;" id="question-tracker">Pregunta 1/10</span>
+      <span style="color: var(--warning); font-size: 0.9rem;" id="points-value">+100 pts</span>
+    </div>
+
+    <div class="question-text" id="question-text">Cargando pregunta...</div>
+
+    <div class="options-grid" id="options-container"></div>
+
+    <div class="feedback-box" id="feedback-box">
+      <div class="feedback-title" id="feedback-title"></div>
+      <div class="feedback-text" id="feedback-text"></div>
+    </div>
+
+    <button class="btn" id="next-btn" style="display: none;" onclick="nextQuestion()">Siguiente Pregunta ➔</button>
+  </div>
+
+  <!-- Pantalla Final -->
+  <div class="screen" id="end-screen">
+    <div class="results-card">
+      <h2 id="end-title">¡Misión Cumplida!</h2>
+      <p style="color: var(--text-muted); margin-top: 5px;">Has completado el repaso de Lengua Castellana</p>
+      
+      <div class="score-display" id="final-score">0 pts</div>
+      <p id="achievement-badge" style="font-size: 1.2rem; margin-bottom: 25px;"></p>
+
+      <button class="btn" onclick="resetGame()">Intentar de Nuevo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Banco de preguntas organizadas por niveles de dificultad
+  const questions = [
+    // NIVEL 1: Explorador de Conceptos
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "¿Cuál de las siguientes palabras es una palabra COMPUESTA?",
+      options: ["Parabrisas", "Florecer", "Submarino", "Papelera"],
+      correct: 0,
+      explanation: "<b>Explicación razonada:</b> <i>Parabrisas</i> está formada por la unión de dos palabras simples (<i>para</i> + <i>brisas</i>). En cambio, <i>florecer</i> y <i>papelera</i> son palabras derivadas con sufijos, y <i>submarino</i> tiene prefijo."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "¿Por qué lleva tilde la palabra 'teléfono'?",
+      options: ["Porque es aguda y termina en vocal", "Porque es llana y no termina en n o s", "Porque es esdrújula y todas llevan tilde", "Porque contiene un diptongo"],
+      correct: 2,
+      explanation: "<b>Explicación razonada:</b> La sílaba tónica es <i>lé</i> (ante-antepenúltima / antepenúltima posición: te-lé-fo-no). Al ser una palabra <b>esdrújula</b>, lleva tilde siempre, sin excepción."
+    },
+    {
+      level: 1,
+      levelName: "Nivel 1: Explorador",
+      points: 100,
+      question: "¿Qué combinación de vocales forma un DIPTONGO?",
+      options: ["Vocal abierta + vocal abierta", "Vocal abierta + vocal cerrada átona", "Vocal cerrada tónica + vocal abierta", "Tres vocales abiertas juntas"],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Un <b>diptongo</b> es la unión de dos vocales en una misma sílaba. Se forma con una vocal abierta (a, e, o) y una cerrada (i, u) si la cerrada no es tónica, o con dos cerradas distintas."
+    },
+
+    // NIVEL 2: Detective de Lengua
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "Identifica la palabra que contiene un HIATO con tilde por regla especial:",
+      options: ["Música", "Camión", "Raíz", "Viento"],
+      correct: 2,
+      explanation: "<b>Explicación razonada:</b> En <i>ra-íz</i> hay un <b>hiato</b> de vocal abierta (a) y vocal cerrada tónica (í). La vocal cerrada lleva tilde siempre para marcar que forman sílabas distintas, respondiendo a la regla especial de tildación de hiatos."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "En la oración 'Aquellos frondosos árboles del parque son antiguos', ¿cuál es el NÚCLEO del Sintagma Nominal sujeto?",
+      options: ["Aquellos", "Frondosos", "Árboles", "Parque"],
+      correct: 2,
+      explanation: "<b>Explicación razonada:</b> El núcleo del sintagma nominal es siempre el sustantivo (o pronombre) principal. En este caso es <i>árboles</i>. 'Aquellos' es un determinante demostrativo y 'frondosos' un adjetivo complemento."
+    },
+    {
+      level: 2,
+      levelName: "Nivel 2: Detective",
+      points: 200,
+      question: "¿Qué distancia expresa el determinante demostrativo 'aquella'?",
+      options: ["Cercanía al hablante", "Distancia media", "Lejanía respecto al hablante y al oyente", "Posición temporal presente"],
+      correct: 2,
+      explanation: "<b>Explicación razonada:</b> Los demostrativos indican distancia: <i>esta</i> (cercanía), <i>esa</i> (distancia media) y <i>aquella</i> (lejanía)."
+    },
+
+    // NIVEL 3: Maestro del Lenguaje
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "Indica las características morfológicas completas del posesivo 'nuestras':",
+      options: ["Un solo poseedor, 1ª persona, femenino plural", "Varios poseedores, 1ª persona, femenino plural", "Varios poseedores, 2ª persona, femenino singular", "Un solo poseedor, 3ª persona, neutro"],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Nuestras</i> pertenece a la 1ª persona de <b>varios poseedores</b> (nosotros/as) y concuerda en género femenino y número plural con el sustantivo al que acompaña."
+    },
+    {
+      level: 3,
+      levelName: "Nivel 3: Maestro",
+      points: 300,
+      question: "¿Cómo se ha formado la palabra derivada 'deshacer'?",
+      options: ["Añadiendo el sufijo -des al verbo hacer", "Añadiendo el prefijo des- a la palabra primitiva hacer", "Uniendo dos palabras simples: des + hacer", "Mediante una raíz latina sin prefijo"],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Se forma por derivación prefijada. El prefijo <b>des-</b> aporta un significado de negación o acción inversa a la palabra primitiva <i>hacer</i>."
+    },
+
+    // NIVEL 4: Gran Analista Morfosintáctico
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "Análisis morfológico de 'nuestros' en la expresión 'nuestros amigos':",
+      options: ["Pronombre posesivo, un poseedor, masculino plural", "Determinante posesivo, varios poseedores, 1.ª persona, masculino, plural", "Sustantivo común, masculino plural", "Adjetivo calificativo, 1.ª persona, plural"],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> Acompaña al sustantivo 'amigos', por lo que es un <b>determinante posesivo</b> (varios poseedores, 1.ª persona, masculino, plural)."
+    },
+    {
+      level: 4,
+      levelName: "Nivel 4: Analista",
+      points: 500,
+      question: "¿Cuál es el análisis sintáctico correcto del Sintagma Nominal 'Las tres pequeñas mariposas'?",
+      options: ["Las (Núcleo), tres (Det), pequeñas (Det), mariposas (Compl)", "Las (Det), tres (Det), pequeñas (Compl/Adj), mariposas (Núcleo/Sust)", "Las tres (Núcleo), pequeñas mariposas (Compl)", "Las (Compl), tres (Núcleo), pequeñas (Det), mariposas (Compl)"],
+      correct: 1,
+      explanation: "<b>Explicación razonada:</b> <i>Las</i> es un determinante artículo, <i>tres</i> es un determinante numeral, <i>pequeñas</i> es un adjetivo que funciona como complemento, y <i>mariposas</i> es el sustantivo núcleo del sintagma nominal."
+    }
+  ];
+
+  // Estado del Juego
+  let currentQuestionIndex = 0;
+  let score = 0;
+  let lives = 3;
+  let isAnswered = false;
+
+  // Elementos DOM
+  const startScreen = document.getElementById('start-screen');
+  const quizScreen = document.getElementById('quiz-screen');
+  const endScreen = document.getElementById('end-screen');
+  const livesDisplay = document.getElementById('lives-display');
+  const scoreDisplay = document.getElementById('score-display');
+  const levelBadge = document.getElementById('level-badge');
+  const progressBar = document.getElementById('progress-bar');
+  const questionText = document.getElementById('question-text');
+  const optionsContainer = document.getElementById('options-container');
+  const feedbackBox = document.getElementById('feedback-box');
+  const feedbackTitle = document.getElementById('feedback-title');
+  const feedbackText = document.getElementById('feedback-text');
+  const nextBtn = document.getElementById('next-btn');
+
+  function startGame() {
+    startScreen.classList.remove('active');
+    quizScreen.classList.add('active');
+    currentQuestionIndex = 0;
+    score = 0;
+    lives = 3;
+    updateHUD();
+    showQuestion();
+  }
+
+  function updateHUD() {
+    livesDisplay.textContent = lives;
+    scoreDisplay.textContent = score;
+    const progress = (currentQuestionIndex / questions.length) * 100;
+    progressBar.style.width = `${progress}%`;
+  }
+
+  function showQuestion() {
+    isAnswered = false;
+    const q = questions[currentQuestionIndex];
+
+    document.getElementById('question-tracker').textContent = `Pregunta ${currentQuestionIndex + 1} de ${questions.length}`;
+    document.getElementById('points-value').textContent = `+${q.points} pts`;
+    levelBadge.textContent = q.levelName;
+    questionText.textContent = q.question;
+
+    optionsContainer.innerHTML = '';
+    feedbackBox.style.display = 'none';
+    nextBtn.style.display = 'none';
+
+    q.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.textContent = opt;
+      btn.onclick = () => selectOption(idx);
+      optionsContainer.appendChild(btn);
+    });
+  }
+
+  function selectOption(selectedIndex) {
+    if (isAnswered) return;
+    isAnswered = true;
+
+    const q = questions[currentQuestionIndex];
+    const buttons = optionsContainer.children;
+
+    if (selectedIndex === q.correct) {
+      buttons[selectedIndex].classList.add('correct');
+      score += q.points;
+      showFeedback(true, "¡Correcto! 🎉", q.explanation);
+    } else {
+      buttons[selectedIndex].classList.add('incorrect');
+      buttons[q.correct].classList.add('correct');
+      lives--;
+      showFeedback(false, "¡Incorrecto! ❌", q.explanation);
+    }
+
+    // Deshabilitar todos los botones
+    Array.from(buttons).forEach(btn => btn.disabled = true);
+    updateHUD();
+
+    if (lives <= 0) {
+      setTimeout(endGame, 2500);
+    } else {
+      nextBtn.style.display = 'block';
+    }
+  }
+
+  function showFeedback(isCorrect, title, text) {
+    feedbackBox.className = `feedback-box ${isCorrect ? 'correct' : 'incorrect'}`;
+    feedbackTitle.textContent = title;
+    feedbackText.innerHTML = text;
+    feedbackBox.style.display = 'block';
+  }
+
+  function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < questions.length) {
+      showQuestion();
+    } else {
+      endGame();
+    }
+  }
+
+  function endGame() {
+    quizScreen.classList.remove('active');
+    endScreen.classList.add('active');
+
+    document.getElementById('final-score').textContent = `${score} pts`;
+    const achievement = document.getElementById('achievement-badge');
+
+    if (lives <= 0) {
+      document.getElementById('end-title').textContent = "¡Misión Interrumpida!";
+      achievement.textContent = "Te has quedado sin vidas. ¡Repasa la teoría y vuelve a intentarlo!";
+      achievement.style.color = "var(--danger)";
+    } else if (score >= 2000) {
+      document.getElementById('end-title').textContent = "🏆 ¡Gran Maestro Morfosintáctico!";
+      achievement.textContent = "¡Excelente dominio de los Temas 1 y 2!";
+      achievement.style.color = "var(--success)";
+    } else {
+      document.getElementById('end-title').textContent = "⭐ ¡Buen Trabajo!";
+      achievement.textContent = "Has demostrado buenos conocimientos. Sigue practicando para el nivel Maestro.";
+      achievement.style.color = "var(--warning)";
+    }
+  }
+
+  function resetGame() {
+    endScreen.classList.remove('active');
+    startScreen.classList.add('active');
+  }
+</script>
+</body>
+</html>
